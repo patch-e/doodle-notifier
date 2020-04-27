@@ -63,9 +63,9 @@ const fetchAndNotify = function() {
       const doodles = [];
       $('#content figure').each(function(index, figure) {
         const doodle = {
-          name: $(figure).find('.image-title-wrapper p')[0].text,
-          desc: $(figure).find('.image-subtitle-wrapper p')[0].text,
-          img:  $(figure).find('img')[0].attr('data-src')
+          name: $(figure).find('.image-title-wrapper p').text(),
+          desc: $(figure).find('.image-subtitle-wrapper p').text(),
+          img:  $(figure).find('img').attr('src') || $(figure).find('img').attr('data-src')
         }
 
         doodles.push(doodle);
@@ -77,12 +77,12 @@ const fetchAndNotify = function() {
       }
 
       // populate subject/body with doodles
-      const subject = 'Pup Alert - Found (' + doodles.length + ') Doodle(s)';
+      const subject = 'Pup Alert - Found (' + doodles.length + ') Doodle' + (doodles.length === 1 ? '' : 's');
       var body = '<p><a href="' + crockett + '">Available Pups</a></p><hr>';
 
       for (var i = 0; i < doodles.length; i++) {
-        body  = '<div>Name: ' + doodles[i].name + '</div>';
-        body += '<div>Description:<p>' + doodles[i].desc + '</p></div>';
+        body += '<p><strong>Name:</strong> ' + doodles[i].name + '</p>';
+        body += '<p><strong>Description:</strong> ' + doodles[i].desc + '</p>';
         body += '<div><img src="' + doodles[i].img + '"></div><hr>';
       }
 
