@@ -65,7 +65,7 @@ const fetchAndNotify = function() {
         const doodle = {
           name: $(figure).find('.image-title-wrapper p').text(),
           desc: $(figure).find('.image-subtitle-wrapper p').text(),
-          img:  $(figure).find('img').attr('src') || $(figure).find('img').attr('data-src')
+          img:  $(figure).find('img').attr('src')
         }
 
         doodles.push(doodle);
