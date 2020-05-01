@@ -65,7 +65,7 @@ const fetchAndNotify = function() {
         const doodle = {
           name: $(figure).find('.image-title-wrapper p').text(),
           desc: $(figure).find('.image-subtitle-wrapper p').text(),
-          img:  $(figure).find('img').attr('src')
+          img:  $(figure).find('img').attr('data-src')
         }
 
         doodles.push(doodle);
@@ -98,7 +98,7 @@ const fetchAndNotify = function() {
       sendMail(mailOptions);
     } else {
       // error logging
-      console.error('error - remote status code ' + response.statusCode);
+      console.error('error occurred:');
       console.error(error);
 
       // wait 1 minute and try again
