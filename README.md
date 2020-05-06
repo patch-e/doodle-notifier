@@ -4,6 +4,7 @@ node.js app that sends an email to recipients when doodle puppies are posted to 
 
 depends on unsource controlled environment.js module that should contain the following format:
 ```javascript
+// environment.js
 module.exports = {
 
     vars: {
