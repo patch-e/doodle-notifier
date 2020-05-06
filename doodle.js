@@ -13,44 +13,19 @@ const request = require('request');
 const cheerio = require('cheerio');
 const console = require('clim')('doodle');
 const later = require('later');
+const environment = require('./environment');
 
 // app bootstrap
 const crockett = 'https://www.crockettdoodles.com/available-puppies';
-const process = {
-  env: {
-    smtpUser: 'username',
-    smtpPassword: 'password',
-    from: 'doodle-notifier-bot',
-    to: 'recipient@somewhere.com'
-  }
-}
-
-// send mail
-const sendMail = function(mailOptions) {
-  // create transporter with SMTP credentials
-  const transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-      user: process.env.smtpUser,
-      pass: process.env.smtpPassword
-    }
-  });
-
-  transporter.sendMail(mailOptions, function(error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log('Message sent: ' + info.response + '\n');
-    }
-  });
-};
+const agent = 'DoodleNotifierBot/1.0.0';
+const schedule = later.parse.text('every 5 mins');
 
 // fetch/parse, send email notification
 const fetchAndNotify = function() {
   const options = {
     url: crockett,
     headers: {
-      'User-Agent': 'DoodleNotifier/1.0.0'
+      'User-Agent': agent
     }
   };
 
@@ -71,35 +46,39 @@ const fetchAndNotify = function() {
         doodles.push(doodle);
       });
 
-      if (doodles.length === 0) {
+      // filter some doodles
+      const filteredDoodles = doodles;
+        // .filter( d => !d.name.startsWith('Maze') );
+        // .filter( d => !d.name.startsWith('Adele') );
+
+      if (filteredDoodles.length === 0) {
         console.log('no doodles found :(');
         return;
       }
 
       // populate subject/body with doodles
-      const subject = 'Pup Alert - Found (' + doodles.length + ') Doodle' + (doodles.length === 1 ? '' : 's');
+      const subject = 'Pup Alert - Found (' + filteredDoodles.length + ') Doodle' + (filteredDoodles.length === 1 ? '' : 's');
       var body = '<p><a href="' + crockett + '">Available Pups</a></p><hr>';
 
-      for (var i = 0; i < doodles.length; i++) {
-        body += '<p><strong>Name:</strong> ' + doodles[i].name + '</p>';
-        body += '<p><strong>Description:</strong> ' + doodles[i].desc + '</p>';
-        body += '<div><img src="' + doodles[i].img + '"></div><hr>';
+      for (var i = 0; i < filteredDoodles.length; i++) {
+        body += '<p><strong>Name:</strong> ' + filteredDoodles[i].name + '</p>';
+        body += '<p><strong>Description:</strong> ' + filteredDoodles[i].desc + '</p>';
+        body += '<div><img src="' + filteredDoodles[i].img + '"></div><hr>';
       }
 
       // create mail message
       const mailOptions = {
-        from: process.env.from,
-        to: process.env.to,
-        subject: utils.trim(subject),
-        html: utils.trim(body)
+        from: agent,
+        to: environment.vars.to,
+        subject: subject,
+        html: body
       };
 
       // send the mail
       sendMail(mailOptions);
     } else {
       // error logging
-      console.error('error occurred:');
-      console.error(error);
+      console.error('error occurred:\n' + error);
 
       // wait 1 minute and try again
       setTimeout(fetchAndNotify, (1000*60)*1);
@@ -107,19 +86,28 @@ const fetchAndNotify = function() {
   });
 };
 
-// setup the schedule
-later.date.localTime();
-const schedule = later.parse.text('every 5 mins');
-later.setInterval(fetchAndNotify, schedule);
-
-const utils = {
-  // type safe trim function
-  // returns a trimmed string with continuous spaces replaced with a single space
-  trim: function(s) {
-    // only invoke trim() if a string was passed in
-    if (typeof s === 'string') {
-        s = s.trim().replace('\n', '').replace('\t', '').replace(/\s+/g,' ');
+// send mail
+const sendMail = function(mailOptions) {
+  // create transporter with SMTP credentials
+  const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+      user: environment.vars.smtpUser,
+      pass: environment.vars.smtpPassword
     }
-    return s;
-  }
+  });
+
+  transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Message sent: ' + info.response + '\n');
+    }
+  });
 };
+
+// start the app
+(function() {
+  later.date.localTime();
+  later.setInterval(fetchAndNotify, schedule);
+})();
