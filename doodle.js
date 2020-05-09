@@ -15,17 +15,28 @@ const console = require('clim')('doodle');
 const later = require('later');
 const environment = require('./environment');
 
-// app bootstrap
-const crockett = 'https://www.crockettdoodles.com/available-puppies';
-const agent = 'DoodleNotifierBot/1.0.0';
-const schedule = later.parse.text('every 5 mins');
+// app constants
+const crockettUrl = 'https://www.crockettdoodles.com/available-puppies';
+const botAgent = 'DoodleNotifierBot/1.1.0';
+const fastSchedule = later.parse.text('every 1 mins');
+const slowSchedule = later.parse.text('every 5 mins');
+const doodleFilter = {
+  cavapoo: {
+    name: 'Cavapoo',
+    regex: new RegExp('cavapoo', 'i')
+  },
+  nonCavapoo: {
+    name: 'Non-Cavapoo',
+    regex: new RegExp('!cavapoo', 'i')
+  }
+};
 
 // fetch/parse, send email notification
-const fetchAndNotify = function() {
+const fetchAndNotify = function(filter) {
   const options = {
-    url: crockett,
+    url: crockettUrl,
     headers: {
-      'User-Agent': agent
+      'User-Agent': botAgent
     }
   };
 
@@ -47,28 +58,38 @@ const fetchAndNotify = function() {
       });
 
       // filter some doodles
-      const filteredDoodles = doodles;
-        // .filter( d => !d.name.startsWith('Maze') );
-        // .filter( d => !d.name.startsWith('Adele') );
+      const filteredDoodles = doodles
+        .filter( d => filter.regex.test(d.desc) );
+        // .filter( d => !d.name.startsWith('name ') );
 
       if (filteredDoodles.length === 0) {
-        console.log('no doodles found :(');
+        console.log('no doodles found (' + filter.name + ')');
         return;
       }
 
-      // populate subject/body with doodles
-      const subject = 'Pup Alert - Found (' + filteredDoodles.length + ') Doodle' + (filteredDoodles.length === 1 ? '' : 's');
-      var body = '<p><a href="' + crockett + '">Available Pups</a></p><hr>';
-
+      // build the message subject
+      const subject = 'Pup Alert - Found (' + filteredDoodles.length + ') ' + 
+      filter.name + (filteredDoodles.length === 1 ? '' : 's');
+      
+      // build the message body
+      // 1. provide a link
+      var body = '<p><a href="' + crockettUrl + '">Available Pups</a></p> ';
+      // 2. summarize the names
+      body += '<ul>';
       for (var i = 0; i < filteredDoodles.length; i++) {
-        body += '<p><strong>Name:</strong> ' + filteredDoodles[i].name + '</p>';
-        body += '<p><strong>Description:</strong> ' + filteredDoodles[i].desc + '</p>';
+        body += '<li>' + filteredDoodles[i].name + '</li> ';
+      }
+      body += '</ul><hr>';
+      // 3. list full details
+      for (var i = 0; i < filteredDoodles.length; i++) {
+        body += '<p><strong>Name:</strong> ' + filteredDoodles[i].name + '</p> ';
+        body += '<p><strong>Description:</strong> ' + filteredDoodles[i].desc + '</p> ';
         body += '<div><img src="' + filteredDoodles[i].img + '"></div><hr>';
       }
 
       // create mail message
       const mailOptions = {
-        from: agent,
+        from: botAgent,
         to: environment.vars.to,
         subject: subject,
         html: body
@@ -109,5 +130,6 @@ const sendMail = function(mailOptions) {
 // start the app
 (function() {
   later.date.localTime();
-  later.setInterval(fetchAndNotify, schedule);
+  later.setInterval(() => fetchAndNotify(doodleFilter.cavapoo), fastSchedule);
+  later.setInterval(() => fetchAndNotify(doodleFilter.nonCavapoo), slowSchedule);
 })();
