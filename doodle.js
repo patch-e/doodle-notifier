@@ -23,11 +23,13 @@ const slowSchedule = later.parse.text('every 5 mins');
 const doodleFilter = {
   cavapoo: {
     name: 'Cavapoo',
-    regex: new RegExp('cavapoo', 'i')
+    regex: /cavapoo/gi,
+    exclude: ''
   },
   nonCavapoo: {
     name: 'Non-Cavapoo',
-    regex: new RegExp('!cavapoo', 'i')
+    regex: false,
+    exclude: 'cavapoo'
   }
 };
 
@@ -58,10 +60,7 @@ const fetchAndNotify = function(filter) {
       });
 
       // filter some doodles
-      const filteredDoodles = doodles
-        .filter( d => filter.regex.test(d.desc) );
-        // .filter( d => !d.name.startsWith('name ') );
-
+      const filteredDoodles = applyFilters(doodles, filter);
       if (filteredDoodles.length === 0) {
         console.log('no doodles found (' + filter.name + ')');
         return;
@@ -105,6 +104,20 @@ const fetchAndNotify = function(filter) {
       setTimeout(fetchAndNotify, (1000*60)*1);
     }
   });
+};
+
+// apply filters to collection
+const applyFilters = function(collection, filter) {
+  if ( filter.regex ) {
+    return collection
+      .filter( d => filter.regex.test(d.desc) );
+      // .filter( d => !d.name.startsWith('name') );
+  } else {
+    return collection
+      .filter( d => !d.desc.toLowerCase().includes(filter.exclude) );
+      // .filter( d => !d.name.startsWith('name') );
+  }
+    
 };
 
 // send mail
