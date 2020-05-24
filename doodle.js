@@ -35,6 +35,11 @@ const doodleFilter = {
 
 // fetch/parse, send email notification
 const fetchAndNotify = function(filter) {
+  if (!filter) {
+    console.log('filter was empty: ' + filter);
+    return;
+  }
+
   const options = {
     url: crockettUrl,
     headers: {
@@ -115,9 +120,8 @@ const applyFilters = function(collection, filter) {
   } else {
     return collection
       .filter( d => !d.desc.toLowerCase().includes(filter.exclude) );
-      // .filter( d => !d.name.startsWith('name') );
+      // .filter( d => !d.name.startsWith('Name') );
   }
-    
 };
 
 // send mail
